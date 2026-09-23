@@ -1,0 +1,67 @@
+AvifForge — 第三方组件声明与许可证摘要
+====================================================
+
+本软件包含/使用下列第三方组件。版权归各自作者所有。
+
+----------------------------------------------------
+1. avifenc.exe（内置编码引擎）
+----------------------------------------------------
+来源: RoNiN-shadow/avifenc-build（公开 GitHub Actions 工作流构建）
+    基于官方 AOMediaCodec/libavif 源码静态编译，MSVC Release / x64
+    编码器: SVT-AV1（唯一启用；不含 AOM / rav1e / dav1d）
+    版本: avifenc 1.4.2 (svt [enc]:v4.1.0)
+    下载资产: avifenc-windows-svt.zip
+    SHA-256(zip): d9a2ebd23cb0c2371bc5a40a9c0b44c7d37e346efe4853bc32b3778be0d0b9e5
+
+libavif — BSD 2-Clause License
+    Copyright Contributors to libavif. All rights reserved.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the conditions of the
+    BSD 2-Clause license are met (see https://github.com/AOMediaCodec/libavif).
+
+SVT-AV1 — BSD-2+Patent (BSD 风格许可 + 附带专利授权)
+    Copyright(c) Alliance for Open Media and contributors.
+    see https://gitlab.com/AOMediaCodec/SVT-AV1 LICENSE.md
+
+libgav1 未使用。以下为本构建内链接的上游库：
+    libyuv     — BSD 3-Clause, Google LLC (https://chromium.googlesource.com/libyuv/libyuv)
+    zlib       — zlib license (https://www.zlib.net)
+    libpng     — libpng license (http://www.libpng.org/pub/png/libpng.html)
+    libjpeg-turbo — IJG license + BSD-3-Clause + zlib (https://libjpeg-turbo.org)
+
+----------------------------------------------------
+2. WPF-UI (Lepo Co.) — MIT License
+----------------------------------------------------
+    Copyright (c) 2021-2025 Lepo (Lepo.co / lepoco)
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...
+    (完整文本: https://opensource.org/license/mit — 同 .NET 运行时声明)
+
+----------------------------------------------------
+3. CommunityToolkit.Mvvm — MIT License
+----------------------------------------------------
+    Copyright (c) .NET Foundation and Contributors
+    （标准 MIT 文本，同 https://github.com/CommunityToolkit/dotnet）
+
+----------------------------------------------------
+4. Microsoft .NET 10 运行时 / WindowsDesktop（自包含发布内嵌）
+----------------------------------------------------
+    MIT License + 随 .NET 分发的第三方运行时组件声明。
+    完整清单见: https://github.com/dotnet/core/tree/main/release-notes
+
+----------------------------------------------------
+5. Fluent System Icons（WPF-UI 引用之图标字体/字形）
+----------------------------------------------------
+    Copyright (c) Microsoft Corporation — MIT License
+    https://github.com/microsoft/fluentui-system-icons
+
+============================
+分发说明：各组件的完整许可证文本以上述上游仓库中的正式版本为准。

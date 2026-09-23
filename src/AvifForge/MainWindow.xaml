@@ -1,0 +1,333 @@
+<ui:FluentWindow x:Class="AvifForge.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:AvifForge.ViewModels"
+        xmlns:conv="clr-namespace:AvifForge.Converters"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="AvifForge · SVT-AV1 图片转 AVIF"
+        Width="1180" Height="760" MinWidth="940" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="Mica"
+        AllowDrop="True"
+        FontFamily="{StaticResource AppFontFamily}"
+        Drop="Window_Drop"
+        DragOver="Window_DragOver"
+        DragEnter="Window_DragEnter"
+        DragLeave="Window_DragLeave"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <SolidColorBrush x:Key="OkBrush" Color="#107C10" />
+        <SolidColorBrush x:Key="OkBgBrush" Color="#20107C10" />
+        <SolidColorBrush x:Key="BadBrush" Color="#D13438" />
+        <SolidColorBrush x:Key="BadBgBrush" Color="#20D13438" />
+        <SolidColorBrush x:Key="WarnBrush" Color="#9D5D00" />
+        <SolidColorBrush x:Key="WarnBgBrush" Color="#229D5D00" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#8A8886" />
+        <SolidColorBrush x:Key="MutedBgBrush" Color="#188A8886" />
+        <SolidColorBrush x:Key="RunBrush" Color="#005FB8" />
+        <SolidColorBrush x:Key="RunBgBrush" Color="#20005FB8" />
+
+        <DataTemplate x:Key="JobItemTemplate">
+            <Grid Margin="10,5,10,5" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="56" />
+                </Grid.ColumnDefinitions>
+
+                <Border CornerRadius="6" Padding="8,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource MutedBgBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="Done">
+                                    <Setter Property="Background" Value="{StaticResource OkBgBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Failed">
+                                    <Setter Property="Background" Value="{StaticResource BadBgBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Skipped">
+                                    <Setter Property="Background" Value="{StaticResource WarnBgBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Running">
+                                    <Setter Property="Background" Value="{StaticResource RunBgBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding StatusText}" FontSize="12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Status}" Value="Done">
+                                        <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Failed">
+                                        <Setter Property="Foreground" Value="{StaticResource BadBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Skipped">
+                                        <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Running">
+                                        <Setter Property="Foreground" Value="{StaticResource RunBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                    <TextBlock Text="{Binding InputName}" FontSize="13" TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding InputPath}" />
+                    <TextBlock Text="{Binding Error}" FontSize="11" Foreground="{StaticResource BadBrush}"
+                               TextTrimming="CharacterEllipsis" ToolTip="{Binding Error}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Error}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Error}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+                    <TextBlock Text="{Binding InputSizeText}" FontSize="12" Opacity="0.75" />
+                    <TextBlock Text=" → " FontSize="12" Opacity="0.45" />
+                    <TextBlock Text="{Binding OutputSizeText}" FontSize="12" Opacity="0.75" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="3" Text="{Binding SavedText}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource OkBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="{Binding ElapsedText}" FontSize="12" Opacity="0.6"
+                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="AvifForge — SVT-AV1 图片转 AVIF" ShowHelp="False" />
+
+        <!-- 工具栏 -->
+        <Grid Grid.Row="1" Margin="16,6,16,6">
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Content="添加文件" Icon="{ui:SymbolIcon Add24}" Command="{Binding AddFilesCommand}" Margin="0,0,8,0" />
+                <ui:Button Content="添加文件夹" Icon="{ui:SymbolIcon Folder24}" Command="{Binding AddFolderViaDialogCommand}" Margin="0,0,8,0" />
+                <ui:Button Content="移除所选" Icon="{ui:SymbolIcon Delete24}" Click="RemoveSelected_Click" Margin="0,0,8,0" />
+                <ui:Button Content="清除已完成" Icon="{ui:SymbolIcon Dismiss24}" Command="{Binding ClearCompletedCommand}" Margin="0,0,8,0" />
+                <ui:Button Content="重试未完成" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding RetryFailedCommand}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Content="打开输出" Icon="{ui:SymbolIcon FolderOpen24}" Click="OpenOutput_Click" Margin="0,0,8,0" />
+                <ui:Button Content="开始转换" Icon="{ui:SymbolIcon Play24}" Appearance="Primary"
+                           Command="{Binding StartCommand}" MinWidth="110" Margin="0,0,8,0" />
+                <ui:Button Content="停止" Icon="{ui:SymbolIcon Stop24}" Command="{Binding CancelCommand}"
+                           IsEnabled="{Binding IsBusy}" MinWidth="76" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 主体：队列 + 设置 -->
+        <Grid Grid.Row="2" Margin="16,0,16,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="420" />
+                <ColumnDefinition Width="356" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Margin="0,0,12,12" CornerRadius="8"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                <Grid>
+                    <ListBox x:Name="QueueList" ItemsSource="{Binding Jobs}"
+                             ItemTemplate="{StaticResource JobItemTemplate}"
+                             SelectionMode="Extended" Background="Transparent" BorderThickness="0"
+                             HorizontalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             VirtualizingPanel.IsVirtualizing="True"
+                             VirtualizingPanel.VirtualizationMode="Recycling">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+
+                    <StackPanel Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Image24" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,10" Opacity="0.45" />
+                        <TextBlock Text="拖入 PNG / JPEG 文件（或文件夹）" FontSize="14" HorizontalAlignment="Center" Opacity="0.6" />
+                        <TextBlock Text="也可以点击上方「添加文件 / 添加文件夹」" FontSize="11" HorizontalAlignment="Center" Opacity="0.4" Margin="0,4,0,0" />
+                    </StackPanel>
+
+                    <Border Visibility="{Binding IsDragOver, Converter={StaticResource BoolToVis}}"
+                            Background="#33005FB8" CornerRadius="8">
+                        <TextBlock Text="松开以加入队列" FontSize="20" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 设置面板 -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+                <StackPanel>
+
+                    <ui:CardExpander Header="质量与速度" Icon="{ui:SymbolIcon Sparkle24}" IsExpanded="True" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,2,0,2">
+                                <TextBlock Text="图像质量（越大越好）" />
+                                <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                           Text="{Binding Settings.Quality, StringFormat={}{0}/100}" />
+                            </Grid>
+                            <Slider Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1"
+                                    Value="{Binding Settings.Quality}"
+                                    IsEnabled="{Binding Settings.MaxQuality, Converter={StaticResource InverseBool}}" />
+                            <TextBlock Text="常用：摄影 50–65；界面/截图 60–75"
+                                       FontSize="11" Opacity="0.55" Margin="0,2,0,10" />
+
+                            <ui:ToggleSwitch Content="最高质量档（q=100，近无损）" IsChecked="{Binding Settings.MaxQuality}" Margin="0,0,0,4" />
+                            <TextBlock Text="SVT-AV1 不支持 4:4:4，故无真无损；q100 为 4:2:0 最高档。"
+                                       FontSize="11" Opacity="0.55" Margin="0,0,0,8" TextWrapping="Wrap" />
+
+                            <Grid Margin="0,2,0,2">
+                                <TextBlock Text="Alpha 质量（0=跟随）" />
+                                <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                           Text="{Binding Settings.QualityAlpha}" />
+                            </Grid>
+                            <Slider Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1"
+                                    Value="{Binding Settings.QualityAlpha}"
+                                    IsEnabled="{Binding Settings.MaxQuality, Converter={StaticResource InverseBool}}" Margin="0,0,0,10" />
+
+                            <Grid Margin="0,2,0,2">
+                                <TextBlock Text="编码速度" />
+                                <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                           Text="{Binding Settings.Speed, StringFormat={}{0}/10}" />
+                            </Grid>
+                            <Slider Minimum="0" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1"
+                                    Value="{Binding Settings.Speed}" />
+                            <Grid>
+                                <TextBlock Text="0 · 最慢/最省" FontSize="10" Opacity="0.45" HorizontalAlignment="Left" />
+                                <TextBlock Text="10 · 最快" FontSize="10" Opacity="0.45" HorizontalAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+                    </ui:CardExpander>
+
+                    <ui:CardExpander Header="像素格式与并发" Icon="{ui:SymbolIcon SlideText24}" IsExpanded="False" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="色度采样固定 4:2:0（SVT-AV1 当前唯一支持路径）" FontSize="11" Opacity="0.55" Margin="0,0,0,10" TextWrapping="Wrap" />
+                            <TextBlock Text="位深" Margin="0,2,0,4" />
+                            <ComboBox ItemsSource="{Binding DepthOptions}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding Settings.Depth}" Margin="0,0,0,10" />
+                            <TextBlock Text="YUV 范围" Margin="0,2,0,4" />
+                            <ComboBox ItemsSource="{Binding RangeOptions}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding Settings.Range}" Margin="0,0,0,10" />
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="并发文件数" VerticalAlignment="Center" />
+                                <ui:NumberBox Value="{Binding Settings.Parallelism}" Minimum="1"
+                                              Maximum="{Binding Settings.MaxParallelism}"
+                                              SpinButtonPlacementMode="Compact" MaxDecimalPlaces="0"
+                                              HorizontalAlignment="Right" Width="120" />
+                            </Grid>
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="单图工作线程" />
+                                    <TextBlock Text="0 = 自动用满 CPU" FontSize="10" Opacity="0.45" />
+                                </StackPanel>
+                                <ui:NumberBox Value="{Binding Settings.JobsPerImage}" Minimum="0" Maximum="64"
+                                              SpinButtonPlacementMode="Compact" MaxDecimalPlaces="0"
+                                              HorizontalAlignment="Right" Width="120" />
+                            </Grid>
+                        </StackPanel>
+                    </ui:CardExpander>
+
+                    <ui:CardExpander Header="输出选项" Icon="{ui:SymbolIcon Save24}" IsExpanded="False" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="输出文件夹" Margin="0,2,0,4" />
+                            <TextBlock Text="绝对路径 = 固定输出到该目录；相对名 = 原图下的子文件夹；留空 = 与原图同目录"
+                                       FontSize="11" Opacity="0.55" Margin="0,0,0,4" TextWrapping="Wrap" />
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox Grid.Column="0" Text="{Binding Settings.SubfolderName, UpdateSourceTrigger=PropertyChanged}"
+                                            PlaceholderText="avif_out" VerticalAlignment="Center" />
+                                <ui:Button Grid.Column="1" Content="浏览…" Icon="{ui:SymbolIcon FolderOpen24}"
+                                           Command="{Binding BrowseOutputFolderCommand}" Margin="6,0,0,0" />
+                            </Grid>
+                            <TextBlock Text="输出已存在时" Margin="0,2,0,4" />
+                            <ComboBox ItemsSource="{Binding OverwriteOptions}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding Settings.OverwritePolicy}" Margin="0,0,0,10" />
+                            <ui:ToggleSwitch Content="添加文件夹时包含子目录" IsChecked="{Binding Settings.IncludeSubfolders}" Margin="0,0,0,6" />
+                            <ui:ToggleSwitch Content="保留元数据 (EXIF/XMP/ICC)" IsChecked="{Binding Settings.KeepMetadata}" Margin="0,0,0,6" />
+                            <ui:ToggleSwitch Content="成功后将原图移入回收站" IsChecked="{Binding Settings.DeleteSourceOnSuccess}" />
+                        </StackPanel>
+                    </ui:CardExpander>
+
+                    <ui:CardExpander Header="高级（SVT 参数透传）" Icon="{ui:SymbolIcon Code24}" IsExpanded="False" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="avifenc -a 透传，分号分隔。SVT 插件仅开放少量键（如 tune=0；preset=8）" FontSize="11" Opacity="0.55" Margin="0,0,0,4" TextWrapping="Wrap" />
+                            <ui:TextBox Text="{Binding Settings.AdvancedParams, UpdateSourceTrigger=PropertyChanged}"
+                                        PlaceholderText="例：tune=0" />
+                        </StackPanel>
+                    </ui:CardExpander>
+
+                    <ui:CardExpander Header="外观" Icon="{ui:SymbolIcon Color24}" IsExpanded="False" Margin="0,0,0,8">
+                        <StackPanel>
+                            <ComboBox ItemsSource="{Binding ThemeOptions}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding Settings.Theme}" />
+                        </StackPanel>
+                    </ui:CardExpander>
+
+                    <ui:CardExpander Header="引擎" Icon="{ui:SymbolIcon Info24}" IsExpanded="False">
+                        <StackPanel>
+                            <TextBlock Text="{Binding EngineStatus}" TextWrapping="Wrap" FontSize="11" Opacity="0.75" Margin="0,0,0,6" />
+                            <TextBlock Text="编码器锁定为 SVT-AV1：AVX2/AVX-512 SIMD 与多核并行由内核自动调度，无 GPU 参与。"
+                                       FontSize="11" Opacity="0.55" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ui:CardExpander>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- 状态栏 -->
+        <Border Grid.Row="3" Padding="16,8" BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+            <Grid>
+                <TextBlock Text="{Binding StatusSummary}" VerticalAlignment="Center" FontSize="12" Opacity="0.8" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding ClockText}" VerticalAlignment="Center" FontSize="12" Opacity="0.6" Margin="0,0,12,0" />
+                    <ProgressBar Width="220" Height="6" Minimum="0" Maximum="1" Value="{Binding GlobalProgress}"
+                                 VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

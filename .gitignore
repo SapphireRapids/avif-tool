@@ -1,0 +1,40 @@
+# --- build outputs -------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+dist/
+artifacts/
+*.exe
+*.dll
+*.msi
+*.wixpdb
+*.zip
+
+# --- third-party encoding engine (see tools/README.md) --------------------
+# tools/avifenc.exe is produced by build-engine/build-avifenc.ps1 and is NOT
+# committed. Everything else under tools/ stays tracked.
+!tools/README.md
+
+# --- local tool caches / scratch dirs -------------------------------------
+.tools/
+.vs/
+_clihome/
+_qmap/
+_tables/
+build-engine/_work/
+build-engine/out/
+*.nuget.props
+*.nuget.targets
+
+# --- editor / os noise ----------------------------------------------------
+*.user
+*.suo
+*.userprefs
+*.binlog
+*.log
+[Tt]humbs.db
+[Dd]esktop.ini
+.vscode/
+*.swp

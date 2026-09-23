@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>AvifForge</RootNamespace>
+    <AssemblyName>AvifForge</AssemblyName>
+    <Version>1.1.0</Version>
+    <Product>avif tool</Product>
+    <Company>avif tool</Company>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+
+  <!-- SVT-AV1 编码引擎（libavif avifenc，静态编译、仅含 SVT）随应用一起分发；
+       不参与单文件打包，作为邻接文件与 exe 同目录 -->
+  <ItemGroup>
+    <Content Include="..\..\tools\avifenc.exe" Link="avifenc.exe"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+             ExcludeFromSingleFile="true"
+             Condition="Exists('..\..\tools\avifenc.exe')" />
+  </ItemGroup>
+
+</Project>
