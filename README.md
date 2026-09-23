@@ -4,7 +4,9 @@
 SIMD（AVX2/AVX-512）与多核并行由内核按 CPU 自动派发；纯 CPU、无 GPU、无后台常驻。
 
 ## 下载
-到 [Releases](../../releases) 取 `avif tool 1.1.msi`：**per-user 安装，无需管理员**，
+到 [Releases](https://github.com/SapphireRapids/avif-tool/releases) 取
+[`avif.tool.1.1.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.1.0/avif.tool.1.1.msi)
+（57 MB · SHA-256 `C96BF37E…BE95C`）：**per-user 安装，无需管理员**，
 装到 `%LOCALAPPDATA%\Programs\avif tool`，自动创建开始菜单 + 桌面快捷方式。
 支持 Windows 10 / 11 x64；卸载走「设置 → 应用」。
 安装包**未做代码签名**，首次运行 SmartScreen 会拦一次，点「仍要运行」即可。
