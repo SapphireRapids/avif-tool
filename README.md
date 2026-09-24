@@ -5,11 +5,12 @@ SIMD（AVX2/AVX-512）与多核并行由内核按 CPU 自动派发；纯 CPU、�
 
 ## 下载
 到 [Releases](https://github.com/SapphireRapids/avif-tool/releases) 取
-[`avif.tool.1.2.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.2.0/avif.tool.1.2.msi)
-（57 MB · SHA-256 `30CA42ED…1FD7`）：**per-user 安装，无需管理员**，
+[`avif.tool.1.2.1.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.2.1/avif.tool.1.2.1.msi)
+（57 MB · SHA-256 `CDAE0DE6…0FBF`）：**per-user 安装，无需管理员**，
 装到 `%LOCALAPPDATA%\Programs\avif tool`，自动创建开始菜单 + 桌面快捷方式。
 支持 Windows 10 / 11 x64；卸载走「设置 → 应用」。
 安装包**未做代码签名**，首次运行 SmartScreen 会拦一次，点「仍要运行」即可。
+已装 1.2.0 的用户直接再跑一次即可升级，不必先卸载。
 
 ## 使用
 1. 拖入文件或文件夹（或「添加文件 / 添加文件夹」）。
@@ -43,7 +44,7 @@ WPF (.NET 10, 自包含单文件) + WPF-UI(Fluent) + CommunityToolkit.Mvvm；
 
 ```powershell
 .\build.ps1 -NoMsi        # 只要 publish\AvifForge.exe，不需要 WiX
-.\build.ps1               # 完整产物 dist\avif tool 1.2.msi（.tools\wix.exe 缺失时自动装 wix 5.0.2）
+.\build.ps1               # 完整产物 dist\avif.tool.1.2.1.msi（.tools\wix.exe 缺失时自动装 wix 5.0.2）
 .\build.ps1 -NugetRoot 'D:\path\to\.nuget-packages'
                           # 完全离线：指向已解包、含 wpf-ui + communitytoolkit.mvvm +
                           # 10.0.x win-x64 runtime packs 的 NuGet 目录

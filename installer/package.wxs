@@ -1,19 +1,26 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
-  <!-- avif tool 1.2：在 1.1 基础上修复「转换后不显示输出体积」（JobEntry 未通知
-       OutputSizeText）、默认质量调到 75、移除质量滑块下方的小贴士；
-       安装时先弹出「是否确认安装」确认框。 -->
+  <!-- avif tool 1.2.1：在 1.2 基础上重做安装确认框——中文界面改用显式的
+       Microsoft YaHei UI（此前不指定字体时中文字形走字体链接回退，渲染成宋体一类
+       字形，与拉丁字形粗细不齐），并按现代网格重排版式（标题 + 分隔线 + 正文 +
+       是/否）。程序本体功能不变。 -->
   <Package Name="avif tool"
            Manufacturer="avif tool"
-           Version="1.2.0"
+           Version="1.2.1"
            Language="2052" Codepage="936"
            UpgradeCode="{815FB4C3-AD00-4867-8EF2-5D758C7115D0}"
            Scope="perUser"
            InstallerVersion="500">
 
-    <SummaryInformation Description="avif tool 1.2 (x64, SVT-AV1)" />
+    <SummaryInformation Description="avif tool 1.2.1 (x64, SVT-AV1)" />
 
-    <MajorUpgrade DowngradeErrorMessage="已安装更新版本的 avif tool，安装程序即将退出。" />
+    <!-- AllowSameVersionUpgrades：默认（false）生成的升级行区间是「小于 1.2.1」，
+         降级检测行是「大于 1.2.1」，两行都不含 1.2.1 本身——如果哪天 1.2.1 需要重新
+         出包（比如这次确认框又要微调），已装 1.2.1 的用户再跑同一个版本号的新包会
+         变成并列安装，「应用和功能」里留下两个 avif tool。开成 yes 后区间变含
+         1.2.1，旧包先被卸掉再装新包。对 1.2.0 → 1.2.1 的正常升级路径没有影响。 -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="已安装更新版本的 avif tool，安装程序即将退出。" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <Icon Id="AppIcon.ico" SourceFile="$(var.SrcDir)\Assets\app.ico" />
@@ -38,20 +45,35 @@
   </Package>
 
   <!-- 首次打开 MSI 时弹出「是否确认安装」确认框：位于 ExecuteAction 之前，
-       点「是」继续安装，点「否」以用户取消（1602）退出。 -->
+       点「是」继续安装，点「否」以用户取消（1602）退出。
+
+       字体的唯一可行写法：WiX v5 内核的 Control 符号根本没有 TextStyle 列（见
+       WixToolset.Data.Symbols.ControlSymbol，只有 Text 等字段），所以没法给单个
+       控件指定字体，整窗字体只能由 DefaultUIFont 属性指向一条 TextStyle 来定。
+       中文界面必须显式用 Microsoft YaHei UI：不指定时中文字形走字体链接回退，
+       渲染成宋体一类字形，和拉丁字形粗细不齐，就是「字体丑」的来源。
+       9pt 会在 125% DPI 下被渲染成 11pt，实测字形清晰、排版居中。
+
+       不放图标：MSI 的 Icon 控件在这套雅黑字号下会被画错——实测同一份 ico 在三个
+       同样 32x32 的图标控件里分别画成 34x28 / 4x27 / 42x28 三档，且一律被控件右下
+       边缘裁掉一块，看不出是哪张图。宁可空着也不挂一个残缺图标。 -->
   <Fragment>
     <UI Id="ConfirmInstallUI">
-      <Dialog Id="ConfirmInstallDlg" Width="370" Height="200" Title="avif tool 1.2 安装程序">
-        <Control Id="Headline" Type="Text" X="16" Y="16" Width="338" Height="24"
-                 Transparent="yes" NoPrefix="yes" Text="是否确认安装 avif tool 1.2？" />
-        <Control Id="Body" Type="Text" X="16" Y="48" Width="338" Height="90"
+      <TextStyle Id="AvifUiFont" FaceName="Microsoft YaHei UI" Size="9" />
+      <Property Id="DefaultUIFont" Value="AvifUiFont" />
+
+      <Dialog Id="ConfirmInstallDlg" Width="400" Height="160" Title="avif tool 1.2.1 安装程序">
+        <Control Id="Headline" Type="Text" X="22" Y="24" Width="356" Height="18"
+                 Transparent="yes" NoPrefix="yes" Text="是否确认安装 avif tool 1.2.1？" />
+        <Control Id="RuleLine" Type="Line" X="22" Y="64" Width="356" Height="0" />
+        <Control Id="Body" Type="Text" X="22" Y="80" Width="356" Height="56"
                  Transparent="yes" NoPrefix="yes"
-                 Text="将把 avif tool 1.2 安装到：&#13;&#10;%LOCALAPPDATA%\Programs\avif tool&#13;&#10;并在开始菜单和桌面创建快捷方式。" />
-        <Control Id="Yes" Type="PushButton" X="146" Y="160" Width="80" Height="24"
+                 Text="将把 avif tool 1.2.1 安装到：&#13;&#10;[LocalAppDataFolder]avif tool&#13;&#10;并在开始菜单和桌面创建快捷方式。" />
+        <Control Id="Yes" Type="PushButton" X="224" Y="126" Width="75" Height="23"
                  Default="yes" Text="是(&amp;Y)">
           <Publish Event="EndDialog" Value="Return" Condition="1" />
         </Control>
-        <Control Id="No" Type="PushButton" X="236" Y="160" Width="80" Height="24"
+        <Control Id="No" Type="PushButton" X="305" Y="126" Width="75" Height="23"
                  Cancel="yes" Text="否(&amp;N)">
           <Publish Event="EndDialog" Value="Exit" Condition="1" />
         </Control>
