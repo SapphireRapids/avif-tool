@@ -1,16 +1,17 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
-  <!-- avif tool 1.1：由 AvifForge 1.0.2 换名重打包，独立 UpgradeCode + 独立安装目录，
-       与已安装的 AvifForge 并存，不会互相卸载。载荷仍是 AvifForge.exe（程序集名未改）。 -->
+  <!-- avif tool 1.2：在 1.1 基础上修复「转换后不显示输出体积」（JobEntry 未通知
+       OutputSizeText）、默认质量调到 75、移除质量滑块下方的小贴士；
+       安装时先弹出「是否确认安装」确认框。 -->
   <Package Name="avif tool"
            Manufacturer="avif tool"
-           Version="1.1.0"
+           Version="1.2.0"
            Language="2052" Codepage="936"
            UpgradeCode="{815FB4C3-AD00-4867-8EF2-5D758C7115D0}"
            Scope="perUser"
            InstallerVersion="500">
 
-    <SummaryInformation Description="avif tool 1.1 (x64, SVT-AV1)" />
+    <SummaryInformation Description="avif tool 1.2 (x64, SVT-AV1)" />
 
     <MajorUpgrade DowngradeErrorMessage="已安装更新版本的 avif tool，安装程序即将退出。" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
@@ -27,6 +28,7 @@
     </StandardDirectory>
     <StandardDirectory Id="DesktopFolder" />
 
+    <UIRef Id="ConfirmInstallUI" />
     <Feature Id="Complete" Title="avif tool" Display="expand" Level="1"
              ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="AppFiles" />
@@ -34,6 +36,31 @@
       <ComponentGroupRef Id="DesktopShortcut" />
     </Feature>
   </Package>
+
+  <!-- 首次打开 MSI 时弹出「是否确认安装」确认框：位于 ExecuteAction 之前，
+       点「是」继续安装，点「否」以用户取消（1602）退出。 -->
+  <Fragment>
+    <UI Id="ConfirmInstallUI">
+      <Dialog Id="ConfirmInstallDlg" Width="370" Height="200" Title="avif tool 1.2 安装程序">
+        <Control Id="Headline" Type="Text" X="16" Y="16" Width="338" Height="24"
+                 Transparent="yes" NoPrefix="yes" Text="是否确认安装 avif tool 1.2？" />
+        <Control Id="Body" Type="Text" X="16" Y="48" Width="338" Height="90"
+                 Transparent="yes" NoPrefix="yes"
+                 Text="将把 avif tool 1.2 安装到：&#13;&#10;%LOCALAPPDATA%\Programs\avif tool&#13;&#10;并在开始菜单和桌面创建快捷方式。" />
+        <Control Id="Yes" Type="PushButton" X="146" Y="160" Width="80" Height="24"
+                 Default="yes" Text="是(&amp;Y)">
+          <Publish Event="EndDialog" Value="Return" Condition="1" />
+        </Control>
+        <Control Id="No" Type="PushButton" X="236" Y="160" Width="80" Height="24"
+                 Cancel="yes" Text="否(&amp;N)">
+          <Publish Event="EndDialog" Value="Exit" Condition="1" />
+        </Control>
+      </Dialog>
+      <InstallUISequence>
+        <Show Dialog="ConfirmInstallDlg" Before="ExecuteAction" />
+      </InstallUISequence>
+    </UI>
+  </Fragment>
 
   <Fragment>
     <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
@@ -68,3 +95,5 @@
     </ComponentGroup>
   </Fragment>
 </Wix>
+
+

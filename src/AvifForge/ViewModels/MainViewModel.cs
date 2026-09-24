@@ -28,6 +28,7 @@ public partial class MainViewModel : ObservableObject
     private readonly AvifEncRunner _runner;
     private readonly ConversionScheduler _scheduler;
     private readonly HashSet<string> _queuedPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<JobEntry, JobAggregate> _aggregates = new();
     private readonly DispatcherTimer _clockTimer;
     private DateTime _batchStartUtc;
 
@@ -37,7 +38,6 @@ public partial class MainViewModel : ObservableObject
     [
         new(DepthChoice.Bit8, "8 bit（兼容性最好）"),
         new(DepthChoice.Bit10, "10 bit（渐变更好，体积略大）"),
-        new(DepthChoice.Bit12, "12 bit（专业）"),
     ];
 
     public IReadOnlyList<OptionItem<RangeChoice>> RangeOptions { get; } =
@@ -128,10 +128,26 @@ public partial class MainViewModel : ObservableObject
         _scheduler = scheduler;
 
         Settings.PropertyChanged += OnSettingChanged;
-        Jobs.CollectionChanged += (_, _) =>
+        Jobs.CollectionChanged += (_, e) =>
         {
             IsEmpty = Jobs.Count == 0;
-            UpdateAggregates();
+            if (e.NewItems is not null)
+            {
+                foreach (JobEntry job in e.NewItems)
+                {
+                    RefreshJob(job);
+                }
+            }
+
+            if (e.OldItems is not null)
+            {
+                foreach (JobEntry job in e.OldItems)
+                {
+                    ForgetJob(job);
+                }
+            }
+
+            TotalCount = Jobs.Count;
         };
 
         _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -336,6 +352,7 @@ public partial class MainViewModel : ObservableObject
         {
             job.Error = null;
             job.Status = JobStatus.Waiting;
+            RefreshJob(job);
         }
 
         GlobalProgress = 0;
@@ -375,6 +392,8 @@ public partial class MainViewModel : ObservableObject
             job.Error = null;
             job.OutputSize = 0;
             job.ElapsedSeconds = 0;
+            job.OutputPath = null;
+            RefreshJob(job);
         }
 
         IsBusy = true;
@@ -383,12 +402,11 @@ public partial class MainViewModel : ObservableObject
         _clockTimer.Start();
 
         var progress = new Progress<double>(p => GlobalProgress = p);
-        await _scheduler.RunAsync(pending, progress, UpdateAggregates);
+        await _scheduler.RunAsync(pending, progress, RefreshJob);
 
         _clockTimer.Stop();
         UpdateClock();
         IsBusy = false;
-        UpdateAggregates();
     }
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
@@ -399,39 +417,53 @@ public partial class MainViewModel : ObservableObject
 
     // ---------------- 聚合统计 ----------------
 
-    private void UpdateAggregates()
+    /// <summary>单个任务对聚合数的贡献快照：终态 + 该状态下节省的字节数。</summary>
+    private readonly record struct JobAggregate(JobStatus Status, long Saved);
+
+    private static long SavedOf(JobEntry job) =>
+        job.Status == JobStatus.Done && job.OutputSize > 0 && job.InputSize > job.OutputSize
+            ? job.InputSize - job.OutputSize
+            : 0;
+
+    /// <summary>
+    /// 按任务当前状态刷新聚合统计：只增减该任务自己的贡献，O(1)。
+    /// 每个任务状态/体积变化点（入队、出队、完成回调、重试重置）都要调用一次。
+    /// </summary>
+    private void RefreshJob(JobEntry job)
     {
-        int done = 0;
-        int failed = 0;
-        int skipped = 0;
-        long saved = 0;
+        // 未跟踪过的新任务按零贡献处理（TryGetValue 失败时 previous 即 default）
+        _aggregates.TryGetValue(job, out JobAggregate previous);
+        Apply(previous, -1);
 
-        foreach (JobEntry job in Jobs)
+        JobAggregate current = new(job.Status, SavedOf(job));
+        _aggregates[job] = current;
+        Apply(current, +1);
+    }
+
+    private void ForgetJob(JobEntry job)
+    {
+        if (_aggregates.Remove(job, out JobAggregate previous))
         {
-            switch (job.Status)
-            {
-                case JobStatus.Done:
-                    done++;
-                    if (job.OutputSize > 0 && job.InputSize > job.OutputSize)
-                    {
-                        saved += job.InputSize - job.OutputSize;
-                    }
+            Apply(previous, -1);
+        }
+    }
 
-                    break;
-                case JobStatus.Failed:
-                    failed++;
-                    break;
-                case JobStatus.Skipped:
-                    skipped++;
-                    break;
-            }
+    private void Apply(JobAggregate aggregate, int sign)
+    {
+        switch (aggregate.Status)
+        {
+            case JobStatus.Done:
+                DoneCount += sign;
+                break;
+            case JobStatus.Failed:
+                FailedCount += sign;
+                break;
+            case JobStatus.Skipped:
+                SkippedCount += sign;
+                break;
         }
 
-        TotalCount = Jobs.Count;
-        DoneCount = done;
-        FailedCount = failed;
-        SkippedCount = skipped;
-        SavedBytes = saved;
+        SavedBytes += sign * aggregate.Saved;
     }
 
     private void UpdateClock()
@@ -449,7 +481,7 @@ public partial class MainViewModel : ObservableObject
 
     // ---------------- 退出清理 ----------------
 
-    /// <summary>取消一切、同步杀死所有 ffmpeg 子进程、释放计时器。保证退出后无后台残留。</summary>
+    /// <summary>取消一切、同步杀死所有 avifenc 子进程、释放计时器。保证退出后无后台残留。</summary>
     public void RequestShutdown()
     {
         _clockTimer.Stop();

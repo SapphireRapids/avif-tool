@@ -197,9 +197,10 @@ public sealed partial class AvifEncRunner : IDisposable
 
         args.AddRange(["-d", settings.Depth switch
         {
-            DepthChoice.Bit12 => "12",
+            DepthChoice.Bit8 => "8",
             DepthChoice.Bit10 => "10",
-            _ => "8",
+            // 旧配置遗留的 Bit12：SVT-AV1 不支持 12 bit（SettingsStore 加载时已迁移），兜底按 10 编码
+            _ => "10",
         }]);
 
         if (settings.Range == RangeChoice.Limited)

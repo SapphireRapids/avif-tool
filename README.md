@@ -5,8 +5,8 @@ SIMD（AVX2/AVX-512）与多核并行由内核按 CPU 自动派发；纯 CPU、�
 
 ## 下载
 到 [Releases](https://github.com/SapphireRapids/avif-tool/releases) 取
-[`avif.tool.1.1.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.1.0/avif.tool.1.1.msi)
-（57 MB · SHA-256 `C96BF37E…BE95C`）：**per-user 安装，无需管理员**，
+[`avif.tool.1.2.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.2.0/avif.tool.1.2.msi)
+（57 MB · SHA-256 `30CA42ED…1FD7`）：**per-user 安装，无需管理员**，
 装到 `%LOCALAPPDATA%\Programs\avif tool`，自动创建开始菜单 + 桌面快捷方式。
 支持 Windows 10 / 11 x64；卸载走「设置 → 应用」。
 安装包**未做代码签名**，首次运行 SmartScreen 会拦一次，点「仍要运行」即可。
@@ -17,7 +17,7 @@ SIMD（AVX2/AVX-512）与多核并行由内核按 CPU 自动派发；纯 CPU、�
    - **图像质量** 0–100（越大越好；摄影 50–65，截图 60–75）；
    - **最高质量档**（`-q 100 --qalpha 100`，近无损*）；
    - **编码速度** 0–10（越大越快、文件越大）；
-   - 位深 8/10/12、YUV 范围、Alpha 质量、并发数、单图线程、
+   - 位深 8/10、YUV 范围、Alpha 质量、并发数、单图线程、
      元数据保留、成功后原图入回收站、输出目录（默认「图片」文件夹；填相对名则作为
      原图下的子文件夹，留空即与原图同目录）、
      已存在策略（跳过/覆盖/重命名）、`-a` 高级透传。
@@ -43,7 +43,7 @@ WPF (.NET 10, 自包含单文件) + WPF-UI(Fluent) + CommunityToolkit.Mvvm；
 
 ```powershell
 .\build.ps1 -NoMsi        # 只要 publish\AvifForge.exe，不需要 WiX
-.\build.ps1               # 完整产物 dist\avif tool 1.1.msi（.tools\wix.exe 缺失时自动装 wix 5.0.2）
+.\build.ps1               # 完整产物 dist\avif tool 1.2.msi（.tools\wix.exe 缺失时自动装 wix 5.0.2）
 .\build.ps1 -NugetRoot 'D:\path\to\.nuget-packages'
                           # 完全离线：指向已解包、含 wpf-ui + communitytoolkit.mvvm +
                           # 10.0.x win-x64 runtime packs 的 NuGet 目录
@@ -56,8 +56,9 @@ WPF (.NET 10, 自包含单文件) + WPF-UI(Fluent) + CommunityToolkit.Mvvm；
 
 ## 已知限制
 - SVT-AV1 v4.1：无 4:2:2/4:4:4、无真无损；`--sharpyuv` 与本静态构建的 libyuv 不兼容，已移除。
+- 位深仅 8/10 bit（SVT-AV1 上限）；1.1 及以前的「12 bit」档位必然失败，已在 UI 移除，
+  旧配置里的该选项加载时自动迁移为 10 bit。
 - `-a` 透传仅少数键被 SVT 接受（如 `tune=0`、`preset=8`），错键会逐文件报错。
-- UI 的「12 bit（专业）」档位必然失败：SVT-AV1 只支持 8/10 bit。
 - 可执行文件仍叫 `AvifForge.exe`、配置仍读写 `%APPDATA%\AvifForge\settings.json`（与 1.0.x 共用），
   详见 `MANIFEST-1.1.md` 的「已知遗留」。
 

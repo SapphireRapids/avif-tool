@@ -207,9 +207,8 @@
                             </Grid>
                             <Slider Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1"
                                     Value="{Binding Settings.Quality}"
-                                    IsEnabled="{Binding Settings.MaxQuality, Converter={StaticResource InverseBool}}" />
-                            <TextBlock Text="常用：摄影 50–65；界面/截图 60–75"
-                                       FontSize="11" Opacity="0.55" Margin="0,2,0,10" />
+                                    IsEnabled="{Binding Settings.MaxQuality, Converter={StaticResource InverseBool}}"
+                                    Margin="0,0,0,10" />
 
                             <ui:ToggleSwitch Content="最高质量档（q=100，近无损）" IsChecked="{Binding Settings.MaxQuality}" Margin="0,0,0,4" />
                             <TextBlock Text="SVT-AV1 不支持 4:4:4，故无真无损；q100 为 4:2:0 最高档。"

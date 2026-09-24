@@ -22,6 +22,7 @@ public enum DepthChoice
 {
     Bit8,
     Bit10,
+    /// <summary>旧版本遗留：SVT-AV1 只支持 8/10 bit，UI 不再提供该档；读到旧配置时迁移为 Bit10。</summary>
     Bit12,
 }
 

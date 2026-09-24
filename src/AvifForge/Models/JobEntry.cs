@@ -73,11 +73,16 @@ public partial class JobEntry : ObservableObject
         OnPropertyChanged(nameof(IsRunning));
         OnPropertyChanged(nameof(IsFinished));
         OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(OutputSizeText));
         OnPropertyChanged(nameof(SavedText));
         OnPropertyChanged(nameof(ElapsedText));
     }
 
-    partial void OnOutputSizeChanged(long value) => OnPropertyChanged(nameof(SavedText));
+    partial void OnOutputSizeChanged(long value)
+    {
+        OnPropertyChanged(nameof(OutputSizeText));
+        OnPropertyChanged(nameof(SavedText));
+    }
 
     internal static string FormatSize(long bytes)
     {

@@ -20,9 +20,9 @@ public partial class AppSettings : ObservableObject
     public static string DefaultOutputFolder =>
         Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 
-    /// <summary>色彩质量 0-100，越大越好（默认 60）。</summary>
+    /// <summary>色彩质量 0-100，越大越好（默认 75）。</summary>
     [ObservableProperty]
-    private int quality = 60;
+    private int quality = 75;
 
     /// <summary>最高质量档：等效 -q 100 --qalpha 100（SVT 无真 4:4:4 无损）。</summary>
     [ObservableProperty]

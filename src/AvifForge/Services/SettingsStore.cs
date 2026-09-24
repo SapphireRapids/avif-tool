@@ -49,6 +49,13 @@ public sealed class SettingsStore
                     }
 
                     settings.ClampValues();
+
+                    // 1.1 及以前 UI 提供过「12 bit」档位但 SVT-AV1 必然编码失败；读到旧配置统一迁移到 10 bit
+                    if (settings.Depth == DepthChoice.Bit12)
+                    {
+                        settings.Depth = DepthChoice.Bit10;
+                    }
+
                     return settings;
                 }
             }

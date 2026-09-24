@@ -1,10 +1,10 @@
-# avif tool 1.1 build script
+# avif tool 1.2 build script
 #   .\build.ps1                  # restore online from nuget.org, publish, then build the MSI
 #   .\build.ps1 -NugetRoot 'D:\path\to\.nuget-packages'
 #                                # fully offline: use an extracted package folder that already
 #                                # contains wpf-ui + communitytoolkit.mvvm + the 10.0.x win-x64
 #                                # runtime packs
-#   .\build.ps1 -MsiName 'avif tool 1.1.msi'
+#   .\build.ps1 -MsiName 'avif tool 1.2.msi'
 #   .\build.ps1 -NoMsi           # stop after dotnet publish (no WiX needed)
 #
 # Note: src\AvifForge links ..\tools\avifenc.exe when it exists (the SVT-AV1 encoding
@@ -14,7 +14,7 @@
 # ASCII only on purpose: Windows PowerShell 5.1 reads .ps1 as ANSI without a BOM.
 param(
     [string]$NugetRoot = '',
-    [string]$MsiName   = 'avif tool 1.1.msi',
+    [string]$MsiName   = 'avif tool 1.2.msi',
     [switch]$NoMsi
 )
 $ErrorActionPreference = 'Stop'
@@ -85,11 +85,14 @@ if (-not (Test-Path $wix)) {
     }
 }
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'dist') | Out-Null
+# NOTE: -d values must be written as "Name=$(...)" (string interpolation). The form
+# Name=(Join-Path ...) makes PowerShell pass the parenthesized expression to the
+# native exe as a SEPARATE argument, so wix receives a bare path (WIX0103).
 & $wix build installer\package.wxs -arch x64 `
     -o (Join-Path $Root "dist\$MsiName") `
-    -d PublishDir=(Join-Path $Root 'publish') `
-    -d SrcDir=(Join-Path $Root 'src\AvifForge') `
-    -d InstallerDir=(Join-Path $Root 'installer')
+    -d "PublishDir=$(Join-Path $Root 'publish')" `
+    -d "SrcDir=$(Join-Path $Root 'src\AvifForge')" `
+    -d "InstallerDir=$(Join-Path $Root 'installer')"
 if ($LASTEXITCODE -ne 0) { throw "wix build failed ($LASTEXITCODE)" }
 
 $msi = Get-Item (Join-Path $Root "dist\$MsiName")

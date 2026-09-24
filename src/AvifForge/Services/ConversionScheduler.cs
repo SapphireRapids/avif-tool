@@ -26,7 +26,7 @@ public sealed class ConversionScheduler : IDisposable
     public async Task RunAsync(
         IReadOnlyList<JobEntry> jobs,
         IProgress<double> progress,
-        Action onJobCompleted)
+        Action<JobEntry> onJobCompleted)
     {
         if (IsRunning || jobs.Count == 0)
         {
@@ -74,11 +74,11 @@ public sealed class ConversionScheduler : IDisposable
                     Report(progress, p);
                     if (syncContext is not null)
                     {
-                        syncContext.Post(_ => onJobCompleted(), null);
+                        syncContext.Post(_ => onJobCompleted(job), null);
                     }
                     else
                     {
-                        onJobCompleted();
+                        onJobCompleted(job);
                     }
                 }
 
@@ -107,6 +107,10 @@ public sealed class ConversionScheduler : IDisposable
     {
         job.Status = JobStatus.Running;
         job.Error = null;
+
+        // 记录编码前输出文件的状态，供失败清理判断「这个文件是不是被本次编码写坏的」
+        bool preexisted = false;
+        DateTime timestampBefore = default;
 
         string candidate;
         try
@@ -146,13 +150,15 @@ public sealed class ConversionScheduler : IDisposable
 
             Directory.CreateDirectory(outDir);
             job.OutputPath = candidate;
+            preexisted = File.Exists(candidate);
+            timestampBefore = preexisted ? GetLastWriteUtc(candidate) : default;
 
             var result = await _runner.EncodeAsync(job.InputPath, candidate, _settings, ct).ConfigureAwait(false);
 
             if (ct.IsCancellationRequested)
             {
                 job.Status = JobStatus.Canceled;
-                TryDeletePartial(candidate);
+                TryDeletePartial(candidate, preexisted, timestampBefore);
                 return;
             }
 
@@ -160,7 +166,7 @@ public sealed class ConversionScheduler : IDisposable
             {
                 job.Status = JobStatus.Failed;
                 job.Error = result.ErrorDetail ?? "未知编码错误";
-                TryDeletePartial(candidate);
+                TryDeletePartial(candidate, preexisted, timestampBefore);
                 return;
             }
 
@@ -185,7 +191,7 @@ public sealed class ConversionScheduler : IDisposable
             job.Status = JobStatus.Canceled;
             if (job.OutputPath is not null)
             {
-                TryDeletePartial(job.OutputPath);
+                TryDeletePartial(job.OutputPath, preexisted, timestampBefore);
             }
         }
         catch (Exception ex)
@@ -194,23 +200,46 @@ public sealed class ConversionScheduler : IDisposable
             job.Error = ex.Message;
             if (job.OutputPath is not null)
             {
-                TryDeletePartial(job.OutputPath);
+                TryDeletePartial(job.OutputPath, preexisted, timestampBefore);
             }
         }
     }
 
-    private static void TryDeletePartial(string path)
+    /// <summary>
+    /// 失败/取消后清理输出文件。编码中途失败会留下半截非零字节的 .avif，与 0 字节文件一样必须删掉；
+    /// 唯一例外是覆盖策略下原本存在、且本次编码没有动过的旧文件（如进程未能启动），删它就是误删用户数据。
+    /// </summary>
+    private static void TryDeletePartial(string path, bool preexisted, DateTime timestampBefore)
     {
         try
         {
-            if (File.Exists(path) && new FileInfo(path).Length == 0)
+            if (!File.Exists(path))
             {
-                File.Delete(path);
+                return;
             }
+
+            if (preexisted && GetLastWriteUtc(path) == timestampBefore)
+            {
+                return;
+            }
+
+            File.Delete(path);
         }
         catch
         {
             // 尽力清理
+        }
+    }
+
+    private static DateTime GetLastWriteUtc(string path)
+    {
+        try
+        {
+            return new FileInfo(path).LastWriteTimeUtc;
+        }
+        catch
+        {
+            return default;
         }
     }
 
