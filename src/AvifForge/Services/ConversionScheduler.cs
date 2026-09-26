@@ -103,6 +103,67 @@ public sealed class ConversionScheduler : IDisposable
         _cts?.Cancel();
     }
 
+    // 候选输出名预留表：保证同一批任务内（含同名不同扩展名的输入）输出路径互不重复。
+    // 仅在单次 RunAsync 的并发窗口内持有，任务结束即释放，不影响跨批次的 rename 续号。
+    private readonly object _reserveLock = new();
+    private readonly HashSet<string> _reserved = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 在锁内原子挑选候选输出名：
+    /// Rename —— 第一个「磁盘上不存在且未被本批预留」的名字；
+    /// Skip   —— 目标名已存在或已被本批预留时跳过（避免与同胞任务撞同一路径）；
+    /// Overwrite —— 固定用主名（用户显式选择覆盖，同路径是预期行为）。
+    /// </summary>
+    private string ReserveCandidate(string outDir, string baseName, out bool skip)
+    {
+        lock (_reserveLock)
+        {
+            string candidate = Path.Combine(outDir, baseName + ".avif");
+
+            if (_settings.OverwritePolicy == OverwritePolicy.Overwrite)
+            {
+                skip = false;
+                return candidate;
+            }
+
+            if (_settings.OverwritePolicy == OverwritePolicy.Skip)
+            {
+                bool usable = !File.Exists(candidate) && _reserved.Add(candidate);
+                skip = !usable;
+                return candidate;
+            }
+
+            // OverwritePolicy.Rename
+            if (!File.Exists(candidate) && _reserved.Add(candidate))
+            {
+                skip = false;
+                return candidate;
+            }
+
+            for (int n = 2; n < 10000; n++)
+            {
+                string alt = Path.Combine(outDir, $"{baseName} ({n}).avif");
+                if (!File.Exists(alt) && _reserved.Add(alt))
+                {
+                    skip = false;
+                    return alt;
+                }
+            }
+
+            // 理论上不可达：同名输出已达 9999 个
+            skip = false;
+            return candidate;
+        }
+    }
+
+    private void ReleaseCandidate(string candidate)
+    {
+        lock (_reserveLock)
+        {
+            _reserved.Remove(candidate);
+        }
+    }
+
     private async Task ExecuteJobAsync(JobEntry job, CancellationToken ct)
     {
         job.Status = JobStatus.Running;
@@ -112,7 +173,8 @@ public sealed class ConversionScheduler : IDisposable
         bool preexisted = false;
         DateTime timestampBefore = default;
 
-        string candidate;
+        string candidate = string.Empty;
+        bool holdsReservation = false;
         try
         {
             string inputDir = Path.GetDirectoryName(job.InputPath)
@@ -122,32 +184,18 @@ public sealed class ConversionScheduler : IDisposable
             string outDir = sub.Length == 0 ? inputDir : Path.Combine(inputDir, sub);
 
             string baseName = Path.GetFileNameWithoutExtension(job.InputPath);
-            candidate = Path.Combine(outDir, baseName + ".avif");
 
-            if (File.Exists(candidate))
+            // 原子分配候选名：同一调度内多个任务（含同名不同扩展名）并发时也不会选中同一路径。
+            // 旧实现先 File.Exists 再写，两个同基件任务会同时选中同一候选文件并发写入，静默丢失一份输出。
+            candidate = ReserveCandidate(outDir, baseName, out bool skipThis);
+            if (skipThis)
             {
-                switch (_settings.OverwritePolicy)
-                {
-                    case OverwritePolicy.Skip:
-                        job.Status = JobStatus.Skipped;
-                        job.Error = "输出已存在（策略：跳过）";
-                        return;
-                    case OverwritePolicy.Rename:
-                        for (int n = 2; n < 10000; n++)
-                        {
-                            string alt = Path.Combine(outDir, $"{baseName} ({n}).avif");
-                            if (!File.Exists(alt))
-                            {
-                                candidate = alt;
-                                break;
-                            }
-                        }
-
-                        break;
-                    // Overwrite：保持 candidate 原样
-                }
+                job.Status = JobStatus.Skipped;
+                job.Error = "输出已存在（策略：跳过）";
+                return;
             }
 
+            holdsReservation = true;
             Directory.CreateDirectory(outDir);
             job.OutputPath = candidate;
             preexisted = File.Exists(candidate);
@@ -171,6 +219,7 @@ public sealed class ConversionScheduler : IDisposable
             }
 
             job.ElapsedSeconds = result.ElapsedSeconds;
+            job.CpuSeconds = result.CpuSeconds;
             job.OutputSize = new FileInfo(candidate).Length;
             job.Status = JobStatus.Done;
 
@@ -201,6 +250,13 @@ public sealed class ConversionScheduler : IDisposable
             if (job.OutputPath is not null)
             {
                 TryDeletePartial(job.OutputPath, preexisted, timestampBefore);
+            }
+        }
+        finally
+        {
+            if (holdsReservation)
+            {
+                ReleaseCandidate(candidate);
             }
         }
     }
@@ -247,5 +303,9 @@ public sealed class ConversionScheduler : IDisposable
     {
         _cts?.Cancel();
         _cts?.Dispose();
+        lock (_reserveLock)
+        {
+            _reserved.Clear();
+        }
     }
 }

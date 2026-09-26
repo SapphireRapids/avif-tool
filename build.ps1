@@ -1,10 +1,10 @@
-# avif tool 1.2.1 build script
+# avif tool 1.3.0 build script
 #   .\build.ps1                  # restore online from nuget.org, publish, then build the MSI
 #   .\build.ps1 -NugetRoot 'D:\path\to\.nuget-packages'
 #                                # fully offline: use an extracted package folder that already
 #                                # contains wpf-ui + communitytoolkit.mvvm + the 10.0.x win-x64
 #                                # runtime packs
-#   .\build.ps1 -MsiName 'avif.tool.1.2.1.msi'
+#   .\build.ps1 -MsiName 'avif.tool.1.3.0.msi'
 #   .\build.ps1 -NoMsi           # stop after dotnet publish (no WiX needed)
 #
 # Note: src\AvifForge links ..\tools\avifenc.exe when it exists (the SVT-AV1 encoding
@@ -14,7 +14,7 @@
 # ASCII only on purpose: Windows PowerShell 5.1 reads .ps1 as ANSI without a BOM.
 param(
     [string]$NugetRoot = '',
-    [string]$MsiName   = 'avif.tool.1.2.1.msi',
+    [string]$MsiName   = 'avif.tool.1.3.0.msi',
     [switch]$NoMsi
 )
 $ErrorActionPreference = 'Stop'

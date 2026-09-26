@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: nuget.config
+
+      # 仓库不含第三方引擎二进制：从最新 Release 的 MSI 中取出 avifenc.exe 放到 tools\
+      - name: Fetch encoding engine (avifenc.exe)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path tools/avifenc.exe)) {
+            $msi = Join-Path $env:RUNNER_TEMP 'engine.msi'
+            Invoke-WebRequest -Uri 'https://github.com/SapphireRapids/avif-tool/releases/latest/download/avif.tool.1.3.0.msi' -OutFile $msi
+            $dir = Join-Path $env:RUNNER_TEMP 'engine-extract'
+            Start-Process -Wait msiexec -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$dir`""
+            $exe = Get-ChildItem $dir -Recurse -Filter avifenc.exe | Select-Object -First 1
+            if (-not $exe) { throw 'avifenc.exe not found inside the release MSI' }
+            New-Item -ItemType Directory -Force -Path tools | Out-Null
+            Copy-Item $exe.FullName tools/avifenc.exe
+          }
+          & tools/avifenc.exe --version
+
+      # -nodeReuse:false -m:1：规避 MSBuild 节点复用（命名管道）在受限环境下的静默失败
+      - name: Build solution
+        run: dotnet build avif-tool.sln -c Release -nodeReuse:false -m:1
+
+      - name: EngineTest (end-to-end through app pipeline)
+        run: dotnet run --project test/EngineTest -c Release
+
+      - name: Stress regression (quick)
+        shell: pwsh
+        run: |
+          python test/StressHarness/gen-corpus.py --out $env:RUNNER_TEMP/corpus --scale quick
+          dotnet run --project test/StressHarness -c Release -- `
+            --corpus $env:RUNNER_TEMP/corpus --out $env:RUNNER_TEMP/stress-out --engine tools/avifenc.exe --quick
+
+      - name: Publish + headless smoke
+        shell: pwsh
+        run: |
+          dotnet publish src/AvifForge -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true -o publish
+          $env:AVIFFORGE_SMOKE_FILE = Join-Path $env:RUNNER_TEMP 'smoke.txt'
+          & publish/AvifForge.exe --smoke
+          if ($LASTEXITCODE -ne 0) { throw "smoke exit code $LASTEXITCODE" }
+          Get-Content $env:AVIFFORGE_SMOKE_FILE

@@ -28,6 +28,10 @@ build-engine/out/
 *.nuget.props
 *.nuget.targets
 
+# --- test outputs --------------------------------------------------------
+test/samples/ET_*.avif
+StressHarness-output/
+
 # --- editor / os noise ----------------------------------------------------
 *.user
 *.suo

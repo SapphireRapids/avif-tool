@@ -6,7 +6,7 @@ using AvifForge.Models;
 
 namespace AvifForge.Services;
 
-public sealed record EncodeResult(bool Success, double ElapsedSeconds, string? ErrorDetail);
+public sealed record EncodeResult(bool Success, double ElapsedSeconds, string? ErrorDetail, double CpuSeconds = 0);
 
 /// <summary>
 /// AVIF 编码引擎：libavif avifenc（构建时仅启用 SVT-AV1 编码器，AVX2/AVX-512 SIMD 由 SVT 内核运行时自动派发）。
@@ -136,20 +136,21 @@ public sealed partial class AvifEncRunner : IDisposable
 
             await proc.WaitForExitAsync(ct);
             sw.Stop();
+            double cpuSeconds = SafeCpu(proc);
 
             if (ct.IsCancellationRequested)
             {
-                return new EncodeResult(false, sw.Elapsed.TotalSeconds, "已取消");
+                return new EncodeResult(false, sw.Elapsed.TotalSeconds, "已取消", cpuSeconds);
             }
 
             bool ok = proc.ExitCode == 0 && File.Exists(output) && new FileInfo(output).Length > 0;
-            return new EncodeResult(ok, sw.Elapsed.TotalSeconds, ok ? null : CompactError(logSb.ToString(), proc.ExitCode));
+            return new EncodeResult(ok, sw.Elapsed.TotalSeconds, ok ? null : CompactError(logSb.ToString(), proc.ExitCode), cpuSeconds);
         }
         catch (OperationCanceledException)
         {
             TryKill(proc);
             sw.Stop();
-            return new EncodeResult(false, sw.Elapsed.TotalSeconds, "已取消");
+            return new EncodeResult(false, sw.Elapsed.TotalSeconds, "已取消", SafeCpu(proc));
         }
         catch (Exception ex)
         {
@@ -312,6 +313,19 @@ public sealed partial class AvifEncRunner : IDisposable
         lock (_sync)
         {
             _running.Remove(p);
+        }
+    }
+
+    /// <summary>子进程 CPU 时间（墙钟可能被休眠灌水，用 CPU 时间作真实成本对照）。</summary>
+    private static double SafeCpu(Process p)
+    {
+        try
+        {
+            return p.TotalProcessorTime.TotalSeconds;
+        }
+        catch
+        {
+            return 0;
         }
     }
 

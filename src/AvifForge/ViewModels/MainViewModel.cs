@@ -392,6 +392,7 @@ public partial class MainViewModel : ObservableObject
             job.Error = null;
             job.OutputSize = 0;
             job.ElapsedSeconds = 0;
+            job.CpuSeconds = 0;
             job.OutputPath = null;
             RefreshJob(job);
         }

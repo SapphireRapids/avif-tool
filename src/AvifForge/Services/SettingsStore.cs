@@ -48,6 +48,19 @@ public sealed class SettingsStore
                         settings.SchemaVersion = 3;
                     }
 
+                    if (settings.SchemaVersion < 4)
+                    {
+                        // 1.3.0 起默认并发按 min(CPU 核数, 内存水位) 自适应（压测：一核一进程吞吐线性，
+                        // 默认 1 在 4 核机只用 1/4 算力）。旧配置里仍是默认 1 的一并抬到新默认，
+                        // 显式调过并发的不动（ClampValues 兜底范围）。
+                        if (settings.Parallelism <= 1)
+                        {
+                            settings.Parallelism = AppSettings.DefaultParallelism;
+                        }
+
+                        settings.SchemaVersion = 4;
+                    }
+
                     settings.ClampValues();
 
                     // 1.1 及以前 UI 提供过「12 bit」档位但 SVT-AV1 必然编码失败；读到旧配置统一迁移到 10 bit
@@ -72,7 +85,7 @@ public sealed class SettingsStore
     {
         try
         {
-            settings.SchemaVersion = 3;
+            settings.SchemaVersion = 4;
             Directory.CreateDirectory(Directory_);
             string tmp = FilePath + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(settings, JsonOptions));

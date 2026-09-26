@@ -26,6 +26,9 @@ public partial class JobEntry : ObservableObject
     private double elapsedSeconds;
 
     [ObservableProperty]
+    private double cpuSeconds;
+
+    [ObservableProperty]
     private string? error;
 
     public JobEntry(string inputPath)
@@ -68,6 +71,10 @@ public partial class JobEntry : ObservableObject
     public string ElapsedText =>
         Status == JobStatus.Done && ElapsedSeconds > 0 ? $"{ElapsedSeconds:0.#}s" : string.Empty;
 
+    /// <summary>CPU 时间对照：墙钟耗时可被系统休眠/挂起灌水，CPU 时间更接近真实编码成本。</summary>
+    public string CpuText =>
+        Status == JobStatus.Done && CpuSeconds > 0 ? $"CPU {CpuSeconds:0.##}s" : string.Empty;
+
     partial void OnStatusChanged(JobStatus value)
     {
         OnPropertyChanged(nameof(IsRunning));
@@ -82,6 +89,11 @@ public partial class JobEntry : ObservableObject
     {
         OnPropertyChanged(nameof(OutputSizeText));
         OnPropertyChanged(nameof(SavedText));
+    }
+
+    partial void OnCpuSecondsChanged(double value)
+    {
+        OnPropertyChanged(nameof(CpuText));
     }
 
     internal static string FormatSize(long bytes)

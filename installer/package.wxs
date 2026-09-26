@@ -1,24 +1,24 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
-  <!-- avif tool 1.2.1：在 1.2 基础上重做安装确认框——中文界面改用显式的
+  <!-- avif tool 1.3.0：在 1.2 基础上重做安装确认框——中文界面改用显式的
        Microsoft YaHei UI（此前不指定字体时中文字形走字体链接回退，渲染成宋体一类
        字形，与拉丁字形粗细不齐），并按现代网格重排版式（标题 + 分隔线 + 正文 +
        是/否）。程序本体功能不变。 -->
   <Package Name="avif tool"
            Manufacturer="avif tool"
-           Version="1.2.1"
+           Version="1.3.0"
            Language="2052" Codepage="936"
            UpgradeCode="{815FB4C3-AD00-4867-8EF2-5D758C7115D0}"
            Scope="perUser"
            InstallerVersion="500">
 
-    <SummaryInformation Description="avif tool 1.2.1 (x64, SVT-AV1)" />
+    <SummaryInformation Description="avif tool 1.3.0 (x64, SVT-AV1)" />
 
-    <!-- AllowSameVersionUpgrades：默认（false）生成的升级行区间是「小于 1.2.1」，
-         降级检测行是「大于 1.2.1」，两行都不含 1.2.1 本身——如果哪天 1.2.1 需要重新
-         出包（比如这次确认框又要微调），已装 1.2.1 的用户再跑同一个版本号的新包会
-         变成并列安装，「应用和功能」里留下两个 avif tool。开成 yes 后区间变含
-         1.2.1，旧包先被卸掉再装新包。对 1.2.0 → 1.2.1 的正常升级路径没有影响。 -->
+    <!-- AllowSameVersionUpgrades：默认（false）生成的升级行区间是「小于 1.3.0」，
+         降级检测行是「大于 1.3.0」，两行都不含 1.3.0 本身——如果哪天 1.3.0 需要重新
+         出包，已装 1.3.0 的用户再跑同一个版本号的新包会变成并列安装，「应用和功能」
+         里留下两个 avif tool。开成 yes 后区间变含 1.3.0，旧包先被卸掉再装新包。
+         对 1.2.1 → 1.3.0 的正常升级路径没有影响。 -->
     <MajorUpgrade AllowSameVersionUpgrades="yes"
                   DowngradeErrorMessage="已安装更新版本的 avif tool，安装程序即将退出。" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
@@ -62,13 +62,13 @@
       <TextStyle Id="AvifUiFont" FaceName="Microsoft YaHei UI" Size="9" />
       <Property Id="DefaultUIFont" Value="AvifUiFont" />
 
-      <Dialog Id="ConfirmInstallDlg" Width="400" Height="160" Title="avif tool 1.2.1 安装程序">
+      <Dialog Id="ConfirmInstallDlg" Width="400" Height="160" Title="avif tool 1.3.0 安装程序">
         <Control Id="Headline" Type="Text" X="22" Y="24" Width="356" Height="18"
-                 Transparent="yes" NoPrefix="yes" Text="是否确认安装 avif tool 1.2.1？" />
+                 Transparent="yes" NoPrefix="yes" Text="是否确认安装 avif tool 1.3.0？" />
         <Control Id="RuleLine" Type="Line" X="22" Y="64" Width="356" Height="0" />
         <Control Id="Body" Type="Text" X="22" Y="80" Width="356" Height="56"
                  Transparent="yes" NoPrefix="yes"
-                 Text="将把 avif tool 1.2.1 安装到：&#13;&#10;[LocalAppDataFolder]avif tool&#13;&#10;并在开始菜单和桌面创建快捷方式。" />
+                 Text="将把 avif tool 1.3.0 安装到：&#13;&#10;[LocalAppDataFolder]avif tool&#13;&#10;并在开始菜单和桌面创建快捷方式。" />
         <Control Id="Yes" Type="PushButton" X="224" Y="126" Width="75" Height="23"
                  Default="yes" Text="是(&amp;Y)">
           <Publish Event="EndDialog" Value="Return" Condition="1" />

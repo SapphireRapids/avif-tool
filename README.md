@@ -5,12 +5,18 @@ SIMD（AVX2/AVX-512）与多核并行由内核按 CPU 自动派发；纯 CPU、�
 
 ## 下载
 到 [Releases](https://github.com/SapphireRapids/avif-tool/releases) 取
-[`avif.tool.1.2.1.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.2.1/avif.tool.1.2.1.msi)
-（57 MB · SHA-256 `CDAE0DE6…0FBF`）：**per-user 安装，无需管理员**，
+[`avif.tool.1.3.0.msi`](https://github.com/SapphireRapids/avif-tool/releases/download/v1.3.0/avif.tool.1.3.0.msi)
+（约 57 MB）：**per-user 安装，无需管理员**，
 装到 `%LOCALAPPDATA%\Programs\avif tool`，自动创建开始菜单 + 桌面快捷方式。
 支持 Windows 10 / 11 x64；卸载走「设置 → 应用」。
 安装包**未做代码签名**，首次运行 SmartScreen 会拦一次，点「仍要运行」即可。
-已装 1.2.0 的用户直接再跑一次即可升级，不必先卸载。
+已装任意旧版本的用户直接再跑一次即可升级，不必先卸载。
+
+1.3.0 变更：默认并发数从 1 改为**按 CPU 核数与可用内存自适应**（压测结论：一核一进程吞吐
+随核数线性扩展，默认 1 在 4 核机上只用到 1/4 算力）；上限仍受核数与内存（每进程预留
+220 MB）双重约束，UI 上有由来说明。旧配置一次性迁移（settings.json 结构版本 3 → 4）。
+压测报告（含核心/线程/并发矩阵、取消清理、竞态修复验证）见
+[docs\avif-tool-压测报告.md](docs/avif-tool-压测报告.md)。
 
 ## 使用
 1. 拖入文件或文件夹（或「添加文件 / 添加文件夹」）。
@@ -18,7 +24,7 @@ SIMD（AVX2/AVX-512）与多核并行由内核按 CPU 自动派发；纯 CPU、�
    - **图像质量** 0–100（越大越好；摄影 50–65，截图 60–75）；
    - **最高质量档**（`-q 100 --qalpha 100`，近无损*）；
    - **编码速度** 0–10（越大越快、文件越大）；
-   - 位深 8/10、YUV 范围、Alpha 质量、并发数、单图线程、
+   - 位深 8/10、YUV 范围、Alpha 质量、并发数（默认按核数/内存自适应，压测最优区间）、单图线程、
      元数据保留、成功后原图入回收站、输出目录（默认「图片」文件夹；填相对名则作为
      原图下的子文件夹，留空即与原图同目录）、
      已存在策略（跳过/覆盖/重命名）、`-a` 高级透传。
@@ -54,6 +60,22 @@ WPF (.NET 10, 自包含单文件) + WPF-UI(Fluent) + CommunityToolkit.Mvvm；
 引擎测试：`dotnet run --project test\EngineTest -c Release`（6 用例走真实 `EncodeAsync`
 管线，输入图在 `test\samples\`，也可传自己的目录作参数）。
 无头自检：`AvifForge.exe --smoke`（建窗 + 探针 avifenc，4 秒自毁，退出码 0=OK）。
+
+压力回归（`test\StressHarness`，走应用真实 `EncodeAsync` + `ConversionScheduler` 路径：
+引擎并发扩展性 / 应用管线 / 取消清理 / 同名基件竞态 / Skip·Overwrite 策略 / 输出合法性）：
+
+```powershell
+python test\StressHarness\gen-corpus.py --out $env:TEMP\corpus --scale quick
+dotnet run --project test\StressHarness -c Release -- --corpus $env:TEMP\corpus --out $env:TEMP\stress-out --quick
+# 完整版：--scale full、去掉 --quick；--engine <avifenc.exe> 显式指定引擎；--avifdec <exe> 追加真实解码校验
+```
+
+CI（`.github/workflows/ci.yml`）：build 全溶液 + EngineTest + quick 压力回归；
+引擎由 CI 从最新 Release 的 MSI 中自动取出（仓库不含第三方二进制）。
+核心/线程/并发矩阵压测（亲和性限核）工具在 `stress\MatrixHarness\`（工作副本），
+方法与数据见上面的压测报告。
+并发上限同时受 CPU 核数与可用内存约束（每编码进程预留 220 MB，取可用内存的 60% 为预算），
+UI 的「并发文件数」下方会显示当前上限的由来。
 
 ## 已知限制
 - SVT-AV1 v4.1：无 4:2:2/4:4:4、无真无损；`--sharpyuv` 与本静态构建的 libyuv 不兼容，已移除。

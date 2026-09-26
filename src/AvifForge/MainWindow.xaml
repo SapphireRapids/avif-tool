@@ -119,6 +119,7 @@
                 <TextBlock Grid.Column="3" Text="{Binding SavedText}" FontSize="12" FontWeight="SemiBold"
                            Foreground="{StaticResource OkBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="4" Text="{Binding ElapsedText}" FontSize="12" Opacity="0.6"
+                           ToolTip="{Binding CpuText}"
                            HorizontalAlignment="Right" VerticalAlignment="Center" />
             </Grid>
         </DataTemplate>
@@ -253,6 +254,8 @@
                                               SpinButtonPlacementMode="Compact" MaxDecimalPlaces="0"
                                               HorizontalAlignment="Right" Width="120" />
                             </Grid>
+                            <TextBlock Text="{Binding Settings.ParallelismHint}" FontSize="11" Opacity="0.55"
+                                       Margin="0,2,0,8" TextWrapping="Wrap" />
                             <Grid>
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="单图工作线程" />
