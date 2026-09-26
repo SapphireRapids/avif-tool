@@ -55,10 +55,32 @@ jobs:
       - name: Publish + headless smoke
         shell: pwsh
         run: |
-          dotnet publish src/AvifForge -c Release -r win-x64 --self-contained true `
-            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:EnableCompressionInSingleFile=true -o publish
-          $env:AVIFFORGE_SMOKE_FILE = Join-Path $env:RUNNER_TEMP 'smoke.txt'
-          & publish/AvifForge.exe --smoke
-          if ($LASTEXITCODE -ne 0) { throw "smoke exit code $LASTEXITCODE" }
-          Get-Content $env:AVIFFORGE_SMOKE_FILE
+          $log = Join-Path $env:RUNNER_TEMP 'ci-diag.txt'
+          function Log($m) { $m | Out-File $log -Append }
+          try {
+            Log "=== dotnet publish ==="
+            $pub = dotnet publish src/AvifForge -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish 2>&1
+            Log (($pub | Select-Object -Last 8 | Out-String).Trim())
+            Log "publish exit=$LASTEXITCODE"
+            if ($LASTEXITCODE -ne 0) { throw "publish exit $LASTEXITCODE" }
+            Log "=== smoke ==="
+            $env:AVIFFORGE_SMOKE_FILE = Join-Path $env:RUNNER_TEMP 'smoke.txt'
+            $smk = & publish/AvifForge.exe --smoke 2>&1
+            Log (($smk | Out-String).Trim())
+            Log "smoke exit=$LASTEXITCODE"
+            if (Test-Path $env:AVIFFORGE_SMOKE_FILE) { Log ("smoke file: " + (Get-Content $env:AVIFFORGE_SMOKE_FILE -Raw).Trim()) } else { Log 'smoke file MISSING' }
+            if (Test-Path publish/AvifForge.exe) { Log ("published exe bytes: " + (Get-Item publish/AvifForge.exe).Length) }
+            Log ("OS: " + (Get-CimInstance Win32_OperatingSystem).Caption)
+            if ($LASTEXITCODE -ne 0) { throw "smoke exit $LASTEXITCODE" }
+          } catch {
+            Log ("EXCEPTION: " + $_)
+            throw
+          }
+
+      - name: Upload CI diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics
+          path: ${{ runner.temp }}/ci-diag.txt
+          if-no-files-found: warn
