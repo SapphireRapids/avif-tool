@@ -28,7 +28,7 @@ bool Quick = opt.ContainsKey("quick");
 string Corpus = Opt("corpus", "stress-corpus");
 string OutRoot = Opt("out", "stress-out");
 string ResultsDir = Opt("results", OutRoot);
-string RaceIn = Opt("race-in", IoPath.Combine(OutRoot, "race-in"));
+string RaceIn = Opt("race-in", IoPath.Combine(IoPath.GetDirectoryName(OutRoot.TrimEnd('/', '\\')) ?? ".", "race-in"));
 string AvifDec = Opt("avifdec", "");
 bool HasDecode() => AvifDec.Length > 0 && IoFile.Exists(AvifDec);
 
@@ -283,7 +283,7 @@ Console.WriteLine($"\n===== PHASE 6: same-basename race ({racePairs} pairs png+j
 // ---------- Phase 4: 输出合法性 ----------
 Console.WriteLine("\n===== PHASE 4: output validity (ALL dirs) =====");
 {
-    var allOut = IoDir.GetFiles(OutRoot, "*", System.IO.SearchOption.AllDirectories);
+    var allOut = IoDir.GetFiles(OutRoot, "*.avif", System.IO.SearchOption.AllDirectories);
     int badHeader = 0, badBrand = 0, empty = 0;
     foreach (string f in allOut)
     {

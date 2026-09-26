@@ -47,9 +47,10 @@ jobs:
       - name: Stress regression (quick)
         shell: pwsh
         run: |
+          python -m pip install --quiet numpy pillow
           python test/StressHarness/gen-corpus.py --out $env:RUNNER_TEMP/corpus --scale quick
           dotnet run --project test/StressHarness -c Release -- `
-            --corpus $env:RUNNER_TEMP/corpus --out $env:RUNNER_TEMP/stress-out --engine tools/avifenc.exe --quick
+            --corpus $env:RUNNER_TEMP/corpus --out $env:RUNNER_TEMP/stress-out --engine (Resolve-Path tools/avifenc.exe) --quick
 
       - name: Publish + headless smoke
         shell: pwsh
