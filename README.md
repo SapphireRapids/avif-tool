@@ -72,7 +72,7 @@ dotnet run --project test\StressHarness -c Release -- --corpus $env:TEMP\corpus 
 
 CI（`.github/workflows/ci.yml`）：build 全溶液 + EngineTest + quick 压力回归；
 引擎由 CI 从最新 Release 的 MSI 中自动取出（仓库不含第三方二进制）。
-核心/线程/并发矩阵压测（亲和性限核）工具在 `stress\MatrixHarness\`（工作副本），
+核心/线程/并发矩阵压测（亲和性限核）工具已随源码入库（`test\MatrixHarness\`），
 方法与数据见上面的压测报告。
 并发上限同时受 CPU 核数与可用内存约束（每编码进程预留 220 MB，取可用内存的 60% 为预算），
 UI 的「并发文件数」下方会显示当前上限的由来。

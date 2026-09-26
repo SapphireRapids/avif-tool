@@ -2,7 +2,7 @@
 
 - **被测对象**：GitHub 发行版 v1.2.1（[SapphireRapids/avif-tool](https://github.com/SapphireRapids/avif-tool)）
   - 应用：v1.2.1 源码本地 publish，版本串 `1.2.1+1207439`（与发行版 commit 一致），
-    `C:\Users\Sapph\Documents\dshwork\avif-tool\publish\AvifForge.exe`（64.3 MB 单文件自包含）
+    `C:\Users\Sapph\Documents\dshwork\avif\avif-tool\publish\AvifForge.exe`（64.3 MB 单文件自包含）
   - 引擎：`avifenc.exe` sha256 `EB82A66E70F15DE0…2FAB`，与发行版 MSI 分发的引擎哈希一致
     （libavif 1.4.2 + SVT-AV1 v4.1.0 静态构建，实测 `--version` 输出 `svt [enc]:v4.1.0`）
 - **测试机**：Windows 11 (10.0.26200)，32 核 CPU
@@ -12,9 +12,9 @@
   感知并发上限、核心×线程×并发矩阵，均在 `avif-tool` 工作副本上完成，最终随 v1.3.0 发布。
 - **方法**：测试 harness 直接引用应用工程（`AvifForge.csproj`），
   全部转换走**应用真实代码路径** `AvifEncRunner.EncodeAsync`（每文件一个 avifenc 子进程）
-  与 `ConversionScheduler`；脚本位于 `stress\StressHarness\`
+  与 `ConversionScheduler`；脚本位于 `test\StressHarness\`（已随源码入库）
 - **语料**：192 个文件 / 230.9 MB（噪声照片 1600×900 PNG+JPEG、扁平 UI 截图 2560×1440、
-  RGBA 透明图 1024×1024、小图 512×512），位于 `stress\corpus\`
+  RGBA 透明图 1024×1024、小图 512×512），由 `test\StressHarness\gen-corpus.py --scale full` 生成
 
 ## 一、引擎并发扩展性（24 个照片文件，q60 s6，每进程 -j 1）
 
@@ -90,12 +90,12 @@
 ## 九、复现方式
 
 ```powershell
-cd C:\Users\Sapph\Documents\dshwork\stress
+cd C:\Users\Sapph\Documents\dshwork\avif\avif-tool
 $env:NUGET_PACKAGES = 'C:\Users\Sapph\Documents\dshwork\.nuget-packages'
-dotnet run --project .\StressHarness\StressHarness.csproj -c Release
+dotnet run --project test\StressHarness -c Release
 ```
 
-原始数据：`stress\results\stress-results.json`；输出样本：`stress\out\`（engine_c* / pipe1 / pipe2 / cancel / race）
+原始数据：`avif\raw-data\stress\results\stress-results.json`（输出样本已清理，按上方命令可重新生成）
 
 ---
 *备注：v1.2.1 的 MSI 本体未下载完整（网络中断），本测试使用与发行版同哈希的引擎 + 同 commit 源码发布体，等价于发行版行为。*
@@ -218,5 +218,5 @@ q60 s6，参数与应用 BuildArguments 一致（`-c svt -q 60 -s 6 -j J -y 420 
 5. 全矩阵 136 次编码 0 失败；峰值单进程 RSS 与并发数严格成比例（16 进程 ≈ 2.5 GB，
    与第十节内存水位模型一致，220 MB/进程的预留偏保守但安全。
 
-原始数据：`stress\matrix-out\matrix-results.json`；工具：`stress\MatrixHarness\`
+原始数据：`avif\raw-data\stress\matrix-results.json`；工具：`test\MatrixHarness\`（已随源码入库）
 （`--cores × --threads(-j) × --parallelism` 任意组合，亲和性掩码限核）。
