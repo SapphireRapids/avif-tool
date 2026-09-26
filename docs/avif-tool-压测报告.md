@@ -1,12 +1,15 @@
-# avif tool v1.2.1（AvifForge）压力测试报告
+# avif tool 压力测试报告（v1.2.1 基线 + v1.3.0 修复验证）
 
-- **被测对象**：GitHub 最新发行版 v1.2.1（[SapphireRapids/avif-tool](https://github.com/SapphireRapids/avif-tool)）
+- **被测对象**：GitHub 发行版 v1.2.1（[SapphireRapids/avif-tool](https://github.com/SapphireRapids/avif-tool)）
   - 应用：v1.2.1 源码本地 publish，版本串 `1.2.1+1207439`（与发行版 commit 一致），
     `C:\Users\Sapph\Documents\dshwork\avif-tool\publish\AvifForge.exe`（64.3 MB 单文件自包含）
   - 引擎：`avifenc.exe` sha256 `EB82A66E70F15DE0…2FAB`，与发行版 MSI 分发的引擎哈希一致
     （libavif 1.4.2 + SVT-AV1 v4.1.0 静态构建，实测 `--version` 输出 `svt [enc]:v4.1.0`）
 - **测试机**：Windows 11 (10.0.26200)，32 核 CPU
 - **日期**：2026-09-26
+- **版本范围**：**第一至九节为 v1.2.1 基线数据**（被测对象即当时最新发行版 v1.2.1）；
+  **第十节起为 1.3.0 的修复与回归验证**——同名基件竞态修复、耗时列 CPU 时间、内存水位
+  感知并发上限、核心×线程×并发矩阵，均在 `avif-tool` 工作副本上完成，最终随 v1.3.0 发布。
 - **方法**：测试 harness 直接引用应用工程（`AvifForge.csproj`），
   全部转换走**应用真实代码路径** `AvifEncRunner.EncodeAsync`（每文件一个 avifenc 子进程）
   与 `ConversionScheduler`；脚本位于 `stress\StressHarness\`
